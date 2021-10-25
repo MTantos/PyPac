@@ -1,3 +1,4 @@
+import numpy as np
 import pygame
 from vector import Vector
 from constants import *
@@ -5,7 +6,7 @@ from constants import *
 class Node(object):
     def __init__(self, x, y):
         self.position = Vector(x, y)
-        self.neighbours = {UP:None, DOWN:None, LEFT:None, RIGHT:None}
+        self.neighbours = {UP:None, DOWN:None, LEFT:None, RIGHT:None, PORTAL:None}
 
     def render(self, screen):
         for key in self.neighbours.keys():
@@ -16,35 +17,80 @@ class Node(object):
                 pygame.draw.circle(screen, RED, self.position.asInt(), 12)
 
 class NodeGroup(object):
-    def __init__(self):
-        self.nodeList = []
+    def __init__(self, level):
+        self.level = level
+        self.nodesLUT = {}
+        self.nodeSymbols = ['+', 'P', 'n']
+        self.pathSymbols = ['.', '-', '|', 'p']
+        data = self.readMazeFile(level)
+        self.createNodeTable(data)
+        self.connectHorizontally(data)
+        self.connectVertically(data)
 
-    def setupTestNodes(self):
-        nodeA = Node(80 ,80)
-        nodeB = Node(160, 80)
-        nodeC = Node(80, 160)
-        nodeD = Node(160, 160)
-        nodeE = Node(208, 160)
-        nodeF = Node(80, 320)
-        nodeG = Node(208, 320)
-        nodeA.neighbours[RIGHT] = nodeB
-        nodeA.neighbours[DOWN] = nodeC
-        nodeB.neighbours[LEFT] = nodeA
-        nodeB.neighbours[DOWN] = nodeD
-        nodeC.neighbours[UP] = nodeA
-        nodeC.neighbours[RIGHT] = nodeD
-        nodeC.neighbours[DOWN] = nodeF
-        nodeD.neighbours[UP] = nodeB
-        nodeD.neighbours[LEFT] = nodeC
-        nodeD.neighbours[RIGHT] = nodeE
-        nodeE.neighbours[LEFT] = nodeD
-        nodeE.neighbours[DOWN] = nodeG
-        nodeF.neighbours[UP] = nodeC
-        nodeF.neighbours[RIGHT] = nodeG
-        nodeG.neighbours[UP] = nodeE
-        nodeG.neighbours[LEFT] = nodeF
-        self.nodeList = [nodeA, nodeB, nodeC, nodeD, nodeE, nodeF, nodeG]
+    def readMazeFile(self, textfile):
+        return np.loadtxt(textfile, dtype='<U1')
+
+    def createNodeTable(self, data, xoffset=0, yoffset=0):
+        for row in list(range(data.shape[0])):
+            for col in list(range(data.shape[1])):
+                if data[row][col] in self.nodeSymbols:
+                    x, y = self.constructKey(col + xoffset, row + yoffset)
+                    self.nodesLUT[(x, y)] = Node(x, y)
+
+    def constructKey(self, x, y):
+        return x * TILEWIDTH, y * TILEHEIGHT
+
+    def connectHorizontally(self, data, xoffset=0, yoffset=0):
+        for row in list(range(data.shape[0])):
+            key = None
+            for col in list(range(data.shape[1])):
+                if data[row][col] in self.nodeSymbols:
+                    if key is None:
+                        key = self.constructKey(col + xoffset, row + yoffset)
+                    else:
+                        otherkey = self.constructKey(col + xoffset, row + yoffset)
+                        self.nodesLUT[key].neighbours[RIGHT] = self.nodesLUT[otherkey]
+                        self.nodesLUT[otherkey].neighbours[LEFT] = self.nodesLUT[key]
+                        key = otherkey
+                elif data[row][col] not in self.pathSymbols:
+                    key = None
+
+    def connectVertically(self, data, xoffset=0, yoffset=0):
+        for col in list(range(data.shape[1])):
+            key = None
+            for row in list(range(data.shape[0])):
+                if data[row][col] in self.nodeSymbols:
+                    if key is None:
+                        key = self.constructKey(col + xoffset, row + yoffset)
+                    else:
+                        otherkey = self.constructKey(col + xoffset, row + yoffset)
+                        self.nodesLUT[key].neighbours[DOWN] = self.nodesLUT[otherkey]
+                        self.nodesLUT[otherkey].neighbours[UP] = self.nodesLUT[key]
+                        key = otherkey
+                elif data[row][col] not in self.pathSymbols:
+                    key = None
+
+    def getNodeFromPixels(self, xpixel, ypixel):
+        if (xpixel, ypixel) in self.nodesLUT.keys():
+            return self.nodesLUT[(xpixel, ypixel)]
+        return None
+
+    def getNodeFromTiles(self, col, row):
+        x, y = self.constructKey(col, row)
+        if (x, y) in self.nodesLUT.keys():
+            return self.nodesLUT[(x, y)]
+        return None
+
+    def getStartNode(self):
+        return list(self.nodesLUT.values())[0]
+
+    def setPortalPair(self, pair1, pair2):
+        key1 = self.constructKey(*pair1)
+        key2 = self.constructKey(*pair2)
+        if key1 in self.nodesLUT.keys() and key2 in self.nodesLUT.keys():
+            self.nodesLUT[key1].neighbours[PORTAL] = self.nodesLUT[key2]
+            self.nodesLUT[key2].neighbours[PORTAL] = self.nodesLUT[key1]
 
     def render(self, screen):
-        for node in self.nodeList:
+        for node in self.nodesLUT.values():
             node.render(screen)
