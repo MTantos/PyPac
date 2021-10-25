@@ -1,9 +1,7 @@
-from numpy import left_shift
 import pygame
 from pygame.locals import *
 from entity import Entity
-from nodes import Node
-from vector import Vector
+from sprites import PacmanSprites
 from constants import *
 
 class Pacman(Entity):
@@ -14,8 +12,10 @@ class Pacman(Entity):
         self.direction = LEFT
         self.setBetweenNodes(LEFT)
         self.alive = True
+        self.sprites = PacmanSprites(self)
 
     def update(self, dt):	
+        self.sprites.update(dt)
         self.position += self.directions[self.direction]*self.speed*dt
         direction = self.getValidKey()
         if self.overshotTarget():

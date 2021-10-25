@@ -18,6 +18,7 @@ class Entity(object):
         self.goal = None
         self.directionMethod = self.randomDirection
         self.setStartNode(node)
+        self.image = None
 
     def setPosition(self):
         self.position = self.node.position.copy()
@@ -105,5 +106,10 @@ class Entity(object):
 
     def render(self, screen):
         if self.visible:
-            p = self.position.asInt()
-            pygame.draw.circle(screen, self.colour, p, self.radius)
+            if self.image is not None:
+                adjust = Vector(TILEWIDTH, TILEHEIGHT) / 2
+                p = self.position - adjust
+                screen.blit(self.image, p.asTuple())
+            else:
+                p = self.position.asInt()
+                pygame.draw.circle(screen, self.colour, p, self.radius)

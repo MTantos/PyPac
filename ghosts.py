@@ -2,6 +2,7 @@ import pygame
 from pygame.locals import *
 from entity import Entity
 from modes import ModeController
+from sprites import GhostSprites
 from vector import Vector
 from constants import *
 
@@ -26,6 +27,7 @@ class Ghost(Entity):
         return directions[index]
 
     def update(self, dt):
+        self.sprites.update()
         self.mode.update(dt)
         if self.mode.current is SCATTER:
             self.scatter()
@@ -73,12 +75,14 @@ class Blinky(Ghost):
         Ghost.__init__(self, node, pacman, blinky)
         self.name = BLINKY
         self.colour = RED
+        self.sprites = GhostSprites(self)
 
 class Pinky(Ghost):
     def __init__(self, node, pacman=None, blinky=None):
         Ghost.__init__(self, node, pacman, blinky)
         self.name = PINKY
         self.colour = PINK
+        self.sprites = GhostSprites(self)
 
     def scatter(self):
         self.goal = Vector(TILEWIDTH*NCOLS, 0)
@@ -91,6 +95,7 @@ class Inky(Ghost):
         Ghost.__init__(self, node, pacman, blinky)
         self.name = INKY
         self.colour = TEAL
+        self.sprites = GhostSprites(self)
 
     def scatter(self):
         self.goal = Vector(TILEWIDTH*NCOLS, TILEHEIGHT*NROWS)
@@ -105,6 +110,7 @@ class Clyde(Ghost):
         Ghost.__init__(self, node, pacman, blinky)
         self.name = CLYDE
         self.colour = ORANGE
+        self.sprites = GhostSprites(self)
 
     def scatter(self):
         self.goal = Vector(0, TILEHEIGHT*NROWS)
