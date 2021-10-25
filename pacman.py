@@ -1,26 +1,17 @@
 import pygame
 from pygame.locals import *
+from entity import Entity
 from nodes import Node
 from vector import Vector
 from constants import *
 
-class Pacman(object):
+class Pacman(Entity):
     def __init__(self, node):
+        Entity.__init__(self, node)
         self.name = PACMAN
-        self.directions = {STOP:Vector(), UP:Vector(0,-1), DOWN:Vector(0,1), LEFT:Vector(-1,0), RIGHT:Vector(1,0)}
-        self.direction = STOP
-        self.speed = 100
-        self.radius = 10
         self.colour = YELLOW
-        self.node = node
-        self.setPosition()
-        self.target = node
-        self.collideRadius = 5
-        
-    def setPosition(self):
-        self.position = self.node.position.copy()
 
-    def update(self, dt):
+    def update(self, dt):	
         self.position += self.directions[self.direction]*self.speed*dt
         direction = self.getValidKey()
         if self.overshotTarget():
@@ -35,7 +26,7 @@ class Pacman(object):
             if self.target is self.node:
                 self.direction = STOP
             self.setPosition()
-        else:
+        else: 
             if self.oppositeDirection(direction):
                 self.reverseDirection()
 
@@ -50,46 +41,18 @@ class Pacman(object):
         if key_pressed[K_RIGHT]:
             return RIGHT
         return STOP
-        
-    def getNewTarget(self, direction):
-        if self.validDirection(direction):
-            return self.node.neighbours[direction]
-        return self.node
-
-    def validDirection(self, direction):
-        if direction is not STOP:
-            return self.node.neighbours[direction] is not None
-        return False
-
-    def overshotTarget(self):
-        if self.target is not None:
-            vec1 = self.target.position - self.node.position
-            vec2 = self.position - self.node.position
-            node2Target = vec1.magnitudeSquared()
-            node2Self = vec2.magnitudeSquared()
-            return node2Self >= node2Target
-        return False
-
-    def reverseDirection(self):
-        self.direction = -self.direction
-        temp = self.node
-        self.node = self.target
-        self.target = temp
-
-    def oppositeDirection(self, direction):
-        if direction is not STOP:
-            return direction == -self.direction
-        return False
 
     def eatPellets(self, pelletList):
         for pellet in pelletList:
-            d = self.position - pellet.position
-            dSquared = d.magnitudeSquared()
-            rSquared = (pellet.radius + self.collideRadius)**2
-            if dSquared <= rSquared:
+            if self.collideCheck(pellet):
                 return pellet
         return None
 
-    def render(self, screen):
-        p = self.position.asInt()
-        pygame.draw.circle(screen, self.colour, p, self.radius)
+    def collideGhost(self, ghost):
+        return self.collideCheck(ghost)
+
+    def collideCheck(self, other):
+        d = self.position - other.position
+        dSquared = d.magnitudeSquared()
+        rSquared = (self.collideRadius + other.radius)**2
+        return dSquared <= rSquared
