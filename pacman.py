@@ -1,22 +1,40 @@
 import pygame
 from pygame.locals import *
+from nodes import Node
 from vector import Vector
 from constants import *
 
 class Pacman(object):
-    def __init__(self):
+    def __init__(self, node):
         self.name = PACMAN
-        self.position = Vector(200,400)
         self.directions = {STOP:Vector(), UP:Vector(0,-1), DOWN:Vector(0,1), LEFT:Vector(-1,0), RIGHT:Vector(1,0)}
         self.direction = STOP
         self.speed = 100
         self.radius = 10
         self.colour = YELLOW
+        self.node = node
+        self.setPosition()
+        self.target = node
+        
+    def setPosition(self):
+        self.position = self.node.position.copy()
 
     def update(self, dt):
         self.position += self.directions[self.direction]*self.speed*dt
         direction = self.getValidKey()
-        self.direction = direction
+        if self.overshotTarget():
+            self.node = self.target
+            self.target = self.getNewTarget(direction)
+            if self.target is not self.node:
+                self.direction = direction
+            else:
+                self.target = self.getNewTarget(self.direction)
+            if self.target is self.node:
+                self.direction = STOP
+            self.setPosition()
+        else:
+            if self.oppositeDirection(direction):
+                self.reverseDirection()
 
     def getValidKey(self):
         key_pressed = pygame.key.get_pressed()
@@ -30,6 +48,36 @@ class Pacman(object):
             return RIGHT
         return STOP
         
+    def getNewTarget(self, direction):
+        if self.validDirection(direction):
+            return self.node.neighbours[direction]
+        return self.node
+
+    def validDirection(self, direction):
+        if direction is not STOP:
+            return self.node.neighbours[direction] is not None
+        return False
+
+    def overshotTarget(self):
+        if self.target is not None:
+            vec1 = self.target.position - self.node.position
+            vec2 = self.position - self.node.position
+            node2Target = vec1.magnitudeSquared()
+            node2Self = vec2.magnitudeSquared()
+            return node2Self >= node2Target
+        return False
+
+    def reverseDirection(self):
+        self.direction = -self.direction
+        temp = self.node
+        self.node = self.target
+        self.target = temp
+
+    def oppositeDirection(self, direction):
+        if direction is not STOP:
+            return direction == -self.direction
+        return False
+
     def render(self, screen):
         p = self.position.asInt()
         pygame.draw.circle(screen, self.colour, p, self.radius)
