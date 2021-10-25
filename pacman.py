@@ -1,3 +1,4 @@
+from numpy import left_shift
 import pygame
 from pygame.locals import *
 from entity import Entity
@@ -10,6 +11,9 @@ class Pacman(Entity):
         Entity.__init__(self, node)
         self.name = PACMAN
         self.colour = YELLOW
+        self.direction = LEFT
+        self.setBetweenNodes(LEFT)
+        self.alive = True
 
     def update(self, dt):	
         self.position += self.directions[self.direction]*self.speed*dt
@@ -56,3 +60,13 @@ class Pacman(Entity):
         dSquared = d.magnitudeSquared()
         rSquared = (self.collideRadius + other.radius)**2
         return dSquared <= rSquared
+
+    def reset(self):
+        Entity.reset(self)
+        self.direction = LEFT
+        self.setBetweenNodes(LEFT)
+        self.alive = True
+    
+    def die(self):
+        self.alive = False
+        self.direction = STOP

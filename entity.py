@@ -13,13 +13,11 @@ class Entity(object):
         self.radius = 10
         self.collideRadius = 5
         self.colour = WHITE
-        self.node = node
-        self.setPosition()
-        self.target = node
         self.visible = True
         self.disablePortal = False
         self.goal = None
         self.directionMethod = self.randomDirection
+        self.setStartNode(node)
 
     def setPosition(self):
         self.position = self.node.position.copy()
@@ -42,8 +40,8 @@ class Entity(object):
 
     def validDirection(self, direction):
         if direction is not STOP:
-            if self.node.neighbours[direction] is not None:
-                return True
+            if self.name in self.node.access[direction]:
+                return self.node.neighbours[direction] is not None
         return False
 
     def getNewTarget(self, direction):
@@ -84,6 +82,23 @@ class Entity(object):
 
     def randomDirection(self, directions):
         return directions[randint(0, len(directions)-1)]
+
+    def setStartNode(self, node):
+        self.node = node
+        self.startNode = node
+        self.target = node
+        self.setPosition()
+
+    def setBetweenNodes(self, direction):
+        if self.node.neighbours[direction] is not None:
+            self.target = self.node.neighbours[direction]
+            self.position = (self.node.position + self.target.position) / 2.0
+
+    def reset(self):
+        self.setStartNode(self.startNode)
+        self.direction = STOP
+        self.speed = 100
+        self.visible = True
 
     def setSpeed(self, speed):
         self.speed = speed * TILEWIDTH / 16
